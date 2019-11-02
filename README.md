@@ -1,7 +1,7 @@
 # Progetto 4
 <b>PDF</b><br>
-<a href="http://lia.disi.unibo.it/Courses/RetiT/materiale/esercitazioni/es3/svolta4.pdf">Svolta</a><br>
-<a href="http://lia.disi.unibo.it/Courses/RetiT/materiale/esercitazioni/es3/proposta4.pdf">Proposta</a>
+<a href="http://lia.disi.unibo.it/Courses/RetiT/materiale/esercitazioni/es4/svolta4.pdf">Svolta</a><br>
+<a href="http://lia.disi.unibo.it/Courses/RetiT/materiale/esercitazioni/es4/proposta4.pdf">Proposta</a>
 <br>
 <b>Divisione del Lavoro</b><br>
 Hiari:<br>
