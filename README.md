@@ -7,7 +7,7 @@
 Hiari:<br>
 Endri: Presentazione<br>
 Karina:<br>
-Daniel:<br>
+Daniel: Client UDP e TCP<br>
 Andrei:<br>
 <b>Consigli</b><br>
 Modificate il file README.md specificando cosa volete fare<br>
