@@ -8,7 +8,7 @@ Hiari:<br>
 Endri: Presentazione<br>
 Karina:<br>
 Daniel: Client UDP e TCP<br>
-Andrei: Sto scrivendo questo testo solo per avere il progetto 4 sulla home di GitHub ciao :)
+Andrei: Sto scrivendo questo testo solo per avere il progetto 4 sulla home di GitHub ciao :)<br>
 <b>Consigli</b><br>
 Modificate il file README.md specificando cosa volete fare<br>
 I file di junk (tipo .txt di prova o file compilati) aggiungeteli scrivendo il nome a ".gitignore"
