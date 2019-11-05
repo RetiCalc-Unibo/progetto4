@@ -7,12 +7,19 @@
 #include <sys/select.h>
 #include <ctype.h>
 
+//Struct richiesta UDP
+typedef struct {
+	char fileName[MAX_LENGTH];
+    char word[MAX_LENGTH];
+} Request;
+
+
 int main(int argc, char * argv[]){
 
 	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdpl;
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20];
 	fd_set rset;
-	int len, nread, nwrite, num , ris, port;
+	int len, nread, nwrite, num , ris, port, fd_fileUDP;
 	struct sockaddr_in cliaddr, servaddr;
 	int port;
 	const int on = 1;
@@ -21,10 +28,6 @@ int main(int argc, char * argv[]){
 	// Controllo Argomenti
 
 	// DI DEFAULT UTILIZZO LA STESSA PORTA
-
-	// se 1 -> Porte Default -> UDP = 1050, TCP = 1051
-	// se 2 -> Assegno la stessa porta sia a UDP che a TCP 
-	// se 3 -> Controllo che siano numeriche e che siano valori validi compresi tra 1024 e 65535
 	// else -> Errore e printf
 	if(argc == 1){
 		for(j = 0; j < strlen(argv[i]); j++){
@@ -35,38 +38,11 @@ int main(int argc, char * argv[]){
 		}
 
 		port = atoi(argc[1]);
-		if(port[i - 1] < 1024 || port[i - 1] > 65535){
+		if(port < 1024 || port> 65535){
 				printf("Server: Ports must be between 1024-65535.\n");
 				exit(3);
 		}
-	} /*else if(argc == 2){
-		for(j = 0; j < strlen(argv[1]); j++){
-				if(!isdigit(argv[i][j])){
-					printf("Server: Ports must be numeric.\n");
-					exit(1);
-				}
-			}
-		port[0] = atoi(argv[1]);
-		port[1] = atoi(argv[1]);
-		if(port[0] < 1024 || port[0] > 65535){
-				printf("Server: Ports must be between 1024-65535.\n");
-				exit(1);
-		}
-	} else if(argc == 2 ) {
-		for(i = 1; i < 3; i ++){
-			for(j = 0; j < strlen(argv[i]); j++){
-				if(!isdigit(argv[i][j])){
-					printf("Server: Ports must be numeric.\n");
-					exit(2);
-				}
-			}
-			port[i - 1] = atoi(argv[i]);
-			if(port[i - 1] < 1024 || port[i - 1] > 65535){
-				printf("Server: Ports must be between 1024-65535.\n");
-				exit(3);
-			}
-		}
-	} */ else {
+	} else {
 		printf("Server: Usage -> Server [port]\n");
 		exit(4);
 	}
@@ -142,11 +118,19 @@ int main(int argc, char * argv[]){
 
 		//Richieste UDP in sequenziale
 		if(FD_ISSET(udpfd, &rset)){
+			len = sizeof(struct sockaddr_in);
+			if (recvfrom(udpfd, &request, sizeof(Request), 0, (struct sockaddr*)&cliaddr, &len) < 0) {
+				perror("Recvfrom error ");
+				continue;
+			}
+			fd_fileUDP = fopen(request.fileName, "wt");
 
 
-		}
 
-		//Richieste TCP in parallelo
+
+		}//if UDP
+
+		//Richieste TCP in concorrente multiprocesso
 		if(FD_ISSET(listenfd, &rset)){
 			len = sizeof(struct sockaddr_in);
 			//Accettazione connessione e creazione figlio
@@ -157,16 +141,20 @@ int main(int argc, char * argv[]){
 					exit(12);
 				}
 			}
+			//Creazione figlio
 			if(fork() == 0){
 				close(listenfd);
 				printf("PID %i: richiesta ricevuta\n", getpid());
-			}
 
 
-		}
-	}
+				close(connfd);
+				exit(0);
+			} //figlio
 
+			//Padre chiude la socket (not listen)
+			close(connfd);
 
+		}//if tcp
 
-
-}
+	}//for request
+}//main
