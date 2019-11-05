@@ -26,11 +26,13 @@ void handler(int signo){
 }
 int main(int argc, char * argv[]){
 	Request request;
-	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdp1, udp_repl, fd_fileUDP_out, fd_fileUDP_in;
+	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdp1, udp_repl, len_word;
+	int fd_fileUDP_out, fd_fileUDP_in;
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20], file_dest_UDP[256];
 	fd_set rset;
 	int len, nread, nwrite, num , ris, port; 
 	struct sockaddr_in cliaddr, servaddr;
+	struct hostent *clienthost;
 	const int on = 1;
 
 
@@ -115,15 +117,24 @@ int main(int argc, char * argv[]){
 		}
 		//Richieste UDP in sequenziale
 		if(FD_ISSET(udpfd, &rset)){
+			ris=0;
 			len = sizeof(struct sockaddr_in);
+			//Ricezione dati
 			if (recvfrom(udpfd, &request, sizeof(Request), 0, (struct sockaddr*)&cliaddr, &len) < 0) {
 				perror("Recvfrom error ");
 				continue;
 			}
-			len = strlen(request.word);
+			clienthost = gethostbyaddr((char *)&cliaddr.sin_addr, sizeof(cliaddr.sin_addr), AF_INET);
+			if (clienthost == NULL) 
+				printf("Client host information not found\n");
+			else {
+				printf("Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
+			}
+			len_word = strlen(request.word);
 			//Leggo e riscrivo file in locale, poi rename 
 			if((fd_fileUDP_in = open(request.fileName, O_RDONLY)) < 0){
 				perror("Opening file input UDP");
+				ris=-1;
 				continue;
 			}
 			//File appoggio
@@ -131,20 +142,21 @@ int main(int argc, char * argv[]){
 			strcat(file_dest_UDP, ".tmp ");
 			if((fd_fileUDP_out = open(file_dest_UDP, O_WRONLY | O_CREAT, 0644)) < 0){
 				perror("Opening file output UDP");
+				ris=-1;
 				continue;
 			}
 			while ((nread = read(fd_fileUDP_in, &buff, DIM_BUFF)) > 0) {
 				//Scrittura del file senza occorrenze parola
 				for(i = 0; i < nread; i++){
-					if(len == 1 || buff[i] != request.word[0])
+					if(len_word == 1 || buff[i] != request.word[0])
 						write(fd_fileUDP_out, &(buff[i]), sizeof(char));
 					else {
-						if(i + len < DIM_BUFF){
+						if(i + len_word < DIM_BUFF){
 							j = 1;
-							while(j < len && buff[i + j] == request.word[j])
+							while(j < len_word && buff[i + j] == request.word[j])
 								j++;
-							if(j == len)
-								i += len;
+							if(j == len_word)
+								i += len_word;
 							else if(j == 1)
 								write(fd_fileUDP_out, &(buff[i]), sizeof(char));
 						}
@@ -152,7 +164,11 @@ int main(int argc, char * argv[]){
 					} //end word check
 				}
 			}
-
+			//Invio risposta
+			if(sendto(udpfd, &ris, sizeof(int), 0, (struct sockaddr*)&cliaddr, len) < 0) {
+				perror("Sendto error "); 
+				exit(1);
+			}
 		}//if UDP
 
 		//Richieste TCP in concorrente multiprocesso
