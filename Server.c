@@ -17,13 +17,14 @@ typedef struct {
 
 int main(int argc, char * argv[]){
 
-	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdpl, udp_repl;
+	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdpl, udp_repl, count_word;
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20];
 	fd_set rset;
 	int len, nread, nwrite, num , ris, port, fd_fileUDP_out,fd_fileUDP_in;
 	struct sockaddr_in cliaddr, servaddr;
 	int port;
 	const int on = 1;
+	count_word = 0;
 
 
 	// Controllo Argomenti
@@ -112,13 +113,25 @@ int main(int argc, char * argv[]){
 				perror("Recvfrom error ");
 				continue;
 			}
+			len = strlen(request.word);
 			//Leggo e riscrivo file in locale, poi rename 
-			fd_fileUDP_in= fopen(request.fileName, "rt");
+			fd_fileUDP_in = fopen(request.fileName, "rt");
 			fd_fileUDP_out = fopen(request.fileName + ".tmp", "wt");
-			while ((nread = read(fd_fileUDP, &buff, DIM_BUFF)) > 0) {
-				i = 0;
-				while (i < nread) {
-					if()
+			while ((nread = read(fd_fileUDP_in, &buff, DIM_BUFF)) > 0) {
+				//Scrittura del file senza occorrenze parola
+				for(i = 0; i < nread; i++){
+					if(buff[i] != request.word[0])
+						write(fd_fileUDP_out, &(buff[i]), sizeof(char));
+					else {
+						if(i + len < DIM_BUFF){
+							j = 1;
+							while(j < len && buff[i + j] == request.word[j])
+								j++;
+							if(j - i == len)
+								i += len;
+						}
+						
+					}
 				}
 			}
 
