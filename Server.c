@@ -16,7 +16,7 @@ typedef struct {
 
 int main(int argc, char * argv[]){
 
-	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdpl;
+	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdpl, udp_repl;
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20];
 	fd_set rset;
 	int len, nread, nwrite, num , ris, port, fd_fileUDP;
@@ -123,7 +123,7 @@ int main(int argc, char * argv[]){
 				perror("Recvfrom error ");
 				continue;
 			}
-			fd_fileUDP = fopen(request.fileName, "wt");
+			fd_fileUDP = fopen(request.fileName, "r+");
 
 
 
