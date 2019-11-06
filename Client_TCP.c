@@ -10,7 +10,7 @@
 #define MAX_LENGTH 256
 
 int main(int argc, char *argv[]) {
-	int sd, port, nread;
+	int sd, port, nread, result;
 	char buff[MAX_LENGTH];
     
     char dirName[MAX_LENGTH];
@@ -54,8 +54,6 @@ int main(int argc, char *argv[]) {
 		servaddr.sin_port = htons(port);
 	}
 
-	printf("Client TCP: Ciclo di richiesta di direttori fino a EOF\n\n");
-	printf("Client TCP: Nome della directory, EOF per terminare: ");
 
     sd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sd < 0) {
@@ -68,11 +66,26 @@ int main(int argc, char *argv[]) {
 		perror("Connect"); 
 		exit(6);
 	}
-	printf("Client TCP: Connessione effettuata\n");
+	printf("Client TCP: Connessione effettuata\n\n");
+
+	printf("Client TCP: Ciclo di richiesta di direttori fino a EOF\n\n");
+	printf("Client TCP: Nome della directory, EOF per terminare: ");
 
 	while (gets(dirName)) {
 		// Invio del nome della directory
 		write(sd, &dirName, sizeof(dirName));
+
+		while((nread = read(sd, &result, sizeof(int))) == 0);
+
+		if(nread < 0) {
+			perror("Read");
+			exit(7);
+		}
+		if(result != 0) {
+			printf("Client TCP: Problema di lettura della directory nel Server\n");
+			printf("Client TCP: Nome della directory, EOF per terminare: ");
+			continue;
+		}
 
         // Ricezione e stampa dei nomi di file inviati dal server
         /* Ciclicamente leggo un nome file (256 byte) e un carattere c.
