@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         *   - se '1' significa che il server non ha finito di trasmettere
         */
 		printf("Client TCP: Ricevo e stampo i nomi dei file remoti\n---------------\n");
-		while((nread = read(sd, buff, MAX_LENGTH)) > 0 && c == '1') {
+		while((nread = read(sd, buff, MAX_LENGTH)) >= 0 && c == '1') {
             printf("\t%s\n", buff);
             if(read(sd, &c, sizeof(char)) < 1){
                 printf("Client TCP: Problema lettura da socket");

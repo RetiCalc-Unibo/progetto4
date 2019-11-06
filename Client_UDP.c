@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 	struct hostent *host;
 	struct sockaddr_in clientaddr, servaddr;
 	int portNumber, socketDescriptor, number, length, result, nameLength;
-	//char fileName[MAX_LENGTH];
+	
 	Request request;
 	
 	// Controllo argomenti in input
@@ -95,12 +95,16 @@ int main(int argc, char *argv[]) {
 			&& request.fileName[nameLength-2] == 'x'
 			&& request.fileName[nameLength-1] == 't') {
 
-			// Copio l'array
-			//memcpy(&(request.file), &fileName, sizeof(request.file));		
-
             printf("Inserire la parola da eliminare o EOF (CTRL + D) per un nuovo file: ");
 
             if(gets(request.word)){
+
+				if(strlen(request.word) == 0) {
+					printf("Non hai inserito una parola.\n");
+					printf("Inserire la parola da eliminare o EOF (CTRL + D) per un nuovo file: ");
+					continue;
+				}
+
                 length = sizeof(servaddr);
                 if (sendto(socketDescriptor, &request, sizeof(Request), 0, (struct sockaddr*)&servaddr, length) < 0) {
                     perror("Errore nella sendto");
@@ -115,7 +119,7 @@ int main(int argc, char *argv[]) {
                 if ((int)ntohl(result) > 0) {
                     printf("Eliminate %i occorrenze della parola richiesta.\n", (int)ntohl(result));
                 } else if ((int)ntohl(result) == 0) {
-                    printf("Nel file richiesto non è presente la parola richiesta.\n");
+                    printf("Nel file non è presente la parola richiesta.\n");
                 } else {
                     printf("Il file %s non esiste sul server.\n", request.fileName);
                 }
