@@ -228,9 +228,9 @@ int main(int argc, char * argv[]){
 							}				
 							printf("\t%s\n", ent->d_name);
 							write(connfd, ent->d_name, MAX_LENGTH);
-							write(connfd, &finish, sizeof(int));
 						}
 						closedir(dir);
+						write(connfd, "\0", sizeof(char));
 
 					} else {
 						if(write(connfd, "0", sizeof(int)) < 0){
@@ -240,8 +240,7 @@ int main(int argc, char * argv[]){
 						perror("diropen");
 						exit(13);
 					}
-					finish = 1;
-					write(connfd, &finish, sizeof(int));
+					printf("Server: Elencati i file di %s\n", dirName);
 				}
 				close(connfd);
 				exit(0);

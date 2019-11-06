@@ -91,11 +91,10 @@ int main(int argc, char *argv[]) {
         */
 		printf("Client TCP: Ricevo e stampo i nomi dei file remoti\n---------------\n");
 		
-		while((nread = read(sd, buff, MAX_LENGTH)) > 0 && result < 1) {
-        	if(read(sd, &result, sizeof(int)) < 0){
-        		perror("read result finish");
-        		exit(8);
-        	}
+		while((nread = read(sd, buff, MAX_LENGTH)) > 0) {
+            if(buff[0] == '\0'){
+            	break;
+            }
             printf("\t%s\n", buff);
         }
 
