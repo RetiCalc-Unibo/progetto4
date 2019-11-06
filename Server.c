@@ -166,14 +166,14 @@ int main(int argc, char * argv[]){
 				for(i = 0; i < nread; i++){
 					j = 0;
 					if(!check_word)
-						write(fd_fileUDP_out, &(buff[i]), sizeof(char))
+						write(fd_fileUDP_out, &(buff[i]), sizeof(char));
 					else if( (i + len_word) < nread 
-							 && (buff[i+len_word] == " " || buff[i+len_word] == "\n") ){
+							 && (buff[i+len_word] == ' ' || buff[i+len_word] == '\n') ){
 							while(j < len_word && buff[i + j] == request.word[j])
 								j++;
 							if(j == len_word-1) i +=len_word;
 					}
-					if(buff[i] == " " || buff[i] == "\n")
+					if(buff[i] == ' ' || buff[i] == '\n')
 						check_word = 0;
 					else check_word = 1;
 				}
