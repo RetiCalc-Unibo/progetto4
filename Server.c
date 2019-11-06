@@ -117,7 +117,7 @@ int main(int argc, char * argv[]){
 	// NB! --> EINTR corrisponde a interruzione da richieste
 	signal(SIGCHLD, handler);
 	FD_ZERO(&rset); //set FD mask
-	maxfdp1 = tcpfd + 1; //determino fd più alto, range 
+	maxfdp1 = udpfd + 1; //determino fd più alto, range 
 	for(;;){
 		//Preparazione maschera --> writefds, exceptfds e timeout settati null
 		// 							si considera solo readfds
@@ -146,42 +146,53 @@ int main(int argc, char * argv[]){
 				printf("Server: Client host information not found\n");
 			else {
 				printf("Server: Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
-			}			
+			}
+			printf("Server: Richiesta eliminazione parola %s dal file %s\n", 
+				request.word, request.fileName);
 			//Leggo e riscrivo file in locale, poi rename 
 			if((fd_fileUDP_in = open(request.fileName, O_RDONLY)) < 0){
 				perror("Opening file input UDP");
 				ris=-1;
+				if(sendto(udpfd, &ris, sizeof(int), 0, (struct sockaddr*)&cliaddr, len) < 0) {
+					perror("Sendto error "); 
+					exit(1);
+				}
 				continue;
 			}
 			//File appoggio
-			strcpy(file_dest_UDP, request.word);
+			strcpy(file_dest_UDP, request.fileName);
 			strcat(file_dest_UDP, ".tmp ");
 			if((fd_fileUDP_out = open(file_dest_UDP, O_WRONLY | O_CREAT, 0644)) < 0){
 				perror("Opening file output UDP");
-				ris=-1;
 				continue;
 			}
-			printf("Server: Richiesta eliminazione parola %s dal file %s\n", 
-				request.word, request.fileName);
 			len_word = strlen(request.word);
+			//printf("Lunghezza parola: %d\n", len_word);
 			while ((nread = read(fd_fileUDP_in, &buff, DIM_BUFF)) > 0) {
 				//Scrittura del file senza occorrenze parola
 				check_word = 0;
 				for(i = 0; i < nread; i++){
 					j = 0;
-					if(!check_word)
-						write(fd_fileUDP_out, &(buff[i]), sizeof(char));
-					else if( (i + len_word) < nread 
-							 && (buff[i+len_word] == ' ' || buff[i+len_word] == '\n') ){
-							while(j < len_word && buff[i + j] == request.word[j])
-								j++;
-							if(j == len_word-1) i +=len_word;
+					if(check_word == 0
+						 && ((i + len_word) < nread)
+						 && (buff[i+len_word] == ' ' || buff[i+len_word] == '\n') ){
+						while(j < len_word && buff[i + j] == request.word[j])
+							j++;
+					}
+					if(j != len_word) write(fd_fileUDP_out, &(buff[i]), sizeof(char));
+					else{
+						i +=len_word;
+							ris++;
 					}
 					if(buff[i] == ' ' || buff[i] == '\n')
 						check_word = 0;
 					else check_word = 1;
 				}
 			}
+			close(fd_fileUDP_in);
+			close(fd_fileUDP_out);
+			rename(file_dest_UDP,request.fileName);
+			printf("Server: operazione terminata\n");
 			//Invio risposta
 			if(sendto(udpfd, &ris, sizeof(int), 0, (struct sockaddr*)&cliaddr, len) < 0) {
 				perror("Sendto error "); 

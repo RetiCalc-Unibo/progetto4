@@ -110,6 +110,7 @@ int main(int argc, char *argv[]) {
                     perror("Errore nella sendto");
                     continue;
                 }
+                printf("Client: richiesta inviata\n");
 
                 if (recvfrom(socketDescriptor, &result, sizeof(result), 0, (struct sockaddr*)&servaddr, &length) < 0) {
                     perror("Errore nella recvfrom");

@@ -4,3 +4,6 @@ piero/
 *.o
 *.out
 Server
+*.txt
+client_UDP
+Client_UDP.c
