@@ -14,7 +14,7 @@
 #include <math.h>
 #include <dirent.h>
 
-#define DIM_BUFF 4096
+#define DIM_BUFF 256
 #define MAX_LENGTH 256
 //Struct richiesta UDP
 typedef struct {
@@ -33,7 +33,7 @@ int main(int argc, char * argv[]){
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20], file_dest_UDP[256];
 	char dirName[MAX_LENGTH];
 	fd_set rset;
-	int len, nread, nwrite, num , ris, port; 
+	int len, nread, nwrite, num , ris, port, check_word;; 
 	struct sockaddr_in cliaddr, servaddr;
 	struct hostent *clienthost;
 	const int on = 1;
@@ -144,8 +144,7 @@ int main(int argc, char * argv[]){
 				printf("Server: Client host information not found\n");
 			else {
 				printf("Server: Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
-			}
-			len_word = strlen(request.word);
+			}			
 			//Leggo e riscrivo file in locale, poi rename 
 			if((fd_fileUDP_in = open(request.fileName, O_RDONLY)) < 0){
 				perror("Opening file input UDP");
@@ -160,23 +159,23 @@ int main(int argc, char * argv[]){
 				ris=-1;
 				continue;
 			}
+			len_word = strlen(request.word);
 			while ((nread = read(fd_fileUDP_in, &buff, DIM_BUFF)) > 0) {
 				//Scrittura del file senza occorrenze parola
+				check_word = 0;
 				for(i = 0; i < nread; i++){
-					if(len_word == 1 || buff[i] != request.word[0])
-						write(fd_fileUDP_out, &(buff[i]), sizeof(char));
-					else {
-						if(i + len_word < DIM_BUFF){
-							j = 1;
+					j = 0;
+					if(!check_word)
+						write(fd_fileUDP_out, &(buff[i]), sizeof(char))
+					else if( (i + len_word) < nread 
+							 && (buff[i+len_word] == " " || buff[i+len_word] == "\n") ){
 							while(j < len_word && buff[i + j] == request.word[j])
 								j++;
-							if(j == len_word)
-								i += len_word;
-							else if(j == 1)
-								write(fd_fileUDP_out, &(buff[i]), sizeof(char));
-						}
-						
-					} //end word check
+							if(j == len_word-1) i +=len_word;
+					}
+					if(buff[i] == " " || buff[i] == "\n")
+						check_word = 0;
+					else check_word = 1;
 				}
 			}
 			//Invio risposta
