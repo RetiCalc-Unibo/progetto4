@@ -10,11 +10,10 @@
 #define MAX_LENGTH 256
 
 int main(int argc, char *argv[]) {
-	int sd, port, nread, result;
+	int sd, port, nread;
 	char buff[MAX_LENGTH];
-    
+    char result;
     char dirName[MAX_LENGTH];
-    char c = '1';
 	struct hostent *host;
 	struct sockaddr_in servaddr;
 
@@ -75,13 +74,10 @@ int main(int argc, char *argv[]) {
 		// Invio del nome della directory
 		write(sd, &dirName, sizeof(dirName));
 
-		while((nread = read(sd, &result, sizeof(int))) == 0);
-
-		if(nread < 0) {
-			perror("Read");
+		if(read(sd, &result, sizeof(char)) < 0){
+			perror("Read result");
 			exit(7);
-		}
-		if(result != 0) {
+		} else if(result == '0') {
 			printf("Client TCP: Problema di lettura della directory nel Server\n");
 			printf("Client TCP: Nome della directory, EOF per terminare: ");
 			continue;
@@ -94,14 +90,15 @@ int main(int argc, char *argv[]) {
         *   - se '1' significa che il server non ha finito di trasmettere
         */
 		printf("Client TCP: Ricevo e stampo i nomi dei file remoti\n---------------\n");
-		while((nread = read(sd, buff, MAX_LENGTH)) >= 0 && c == '1') {
-            printf("\t%s\n", buff);
-            if(read(sd, &c, sizeof(char)) < 1){
-                printf("Client TCP: Problema lettura da socket");
-                exit(7);
-            }
-		}
 		
+		while((nread = read(sd, buff, MAX_LENGTH)) > 0 && result < 1) {
+        	if(read(sd, &result, sizeof(int)) < 0){
+        		perror("read result finish");
+        		exit(8);
+        	}
+            printf("\t%s\n", buff);
+        }
+
 		printf("---------------\nClient TCP: Trasferimento terminato\n\n");
 
 		printf("Client TCP: Nome della directory, EOF per terminare: ");

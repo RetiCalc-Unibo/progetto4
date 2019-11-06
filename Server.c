@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sys/select.h>
 #include <math.h>
+#include <dirent.h>
 
 #define DIM_BUFF 4096
 #define MAX_LENGTH 256
@@ -24,32 +25,40 @@ typedef struct {
 void handler(int signo){
 
 }
+
 int main(int argc, char * argv[]){
 	Request request;
-	int i, j, listenfd, connfd, udpfd, fd_file, nready, maxfdp1, udp_repl, len_word;
+	int i, j, tcpfd, connfd, udpfd, fd_file, nready, maxfdp1, udp_repl, len_word;
 	int fd_fileUDP_out, fd_fileUDP_in;
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20], file_dest_UDP[256];
+	char dirName[MAX_LENGTH];
 	fd_set rset;
 	int len, nread, nwrite, num , ris, port; 
 	struct sockaddr_in cliaddr, servaddr;
 	struct hostent *clienthost;
 	const int on = 1;
 
+	DIR * dir;
+	struct dirent * ent;
+	int finish;
 
 	// Controllo Argomenti
 
 	// DI DEFAULT UTILIZZO LA STESSA PORTA
 	// else -> Errore e printf
 	if(argc == 1){
-		for(j = 0; j < strlen(argv[i]); j++){
-			if(!isdigit(argv[i][j])){
-				printf("Server: Ports must be numeric.\n");
+		port = 1050;
+	}
+	else if(argc == 2){
+		for(j = 0; j < strlen(argv[1]); j++){
+			if(!isdigit(argv[1][j])){
+				printf("Server: Port must be numeric.\n");
 				exit(2);
 			}
 		}
 		port = atoi(argv[1]);
 		if(port < 1024 || port> 65535){
-				printf("Server: Ports must be between 1024-65535.\n");
+				printf("Server: Port must be between 1024-65535.\n");
 				exit(3);
 		}
 	} else {
@@ -59,29 +68,35 @@ int main(int argc, char * argv[]){
 
 	//Inizializzo indirizzo server
 	memset((char *)&servaddr, 0,sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
 	servaddr.sin_port = htons(port);
 
 
 	//Creazione socket TCP listen
-	if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+	if ((tcpfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		perror("Apertura socket TCP"); 
 		exit(5);
 	}
 
 	//Set option socket TCP
 	//SO_REUSE --> reuse address; option_value --> on = 1
-	if(setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0){
+	if(setsockopt(tcpfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0){
 		perror("Set opzioni socker TCP");
 		exit(6);
 	}
-	if(bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0){
+	if(bind(tcpfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0){
 		perror("Bind socket TCP");
 		exit(7);
 	}
 
+	if(listen(tcpfd, 5) < 0){
+		perror("Listen socket TCP");
+		exit(7);
+	}
+
 	//Creazione socket UDP 
-	if ((udpfd = socket (AF_INET, SOCK_DGRAM, 0)) < 0){
+	if ((udpfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
 		perror("Apertura socket UDP");
 		exit(8);
 	}
@@ -101,11 +116,11 @@ int main(int argc, char * argv[]){
 	// NB! --> EINTR corrisponde a interruzione da richieste
 	signal(SIGCHLD, handler);
 	FD_ZERO(&rset); //set FD mask
-	maxfdp1 = listenfd + 1; //determino fd più alto, range 
+	maxfdp1 = tcpfd + 1; //determino fd più alto, range 
 	for(;;){
 		//Preparazione maschera --> writefds, exceptfds e timeout settati null
 		// 							si considera solo readfds
-		FD_SET(listenfd, &rset);
+		FD_SET(tcpfd, &rset);
 		FD_SET(udpfd, &rset);
 
 		if((nready = select(maxfdp1, &rset, NULL, NULL, NULL)) < 0){
@@ -126,9 +141,9 @@ int main(int argc, char * argv[]){
 			}
 			clienthost = gethostbyaddr((char *)&cliaddr.sin_addr, sizeof(cliaddr.sin_addr), AF_INET);
 			if (clienthost == NULL) 
-				printf("Client host information not found\n");
+				printf("Server: Client host information not found\n");
 			else {
-				printf("Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
+				printf("Server: Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
 			}
 			len_word = strlen(request.word);
 			//Leggo e riscrivo file in locale, poi rename 
@@ -172,10 +187,10 @@ int main(int argc, char * argv[]){
 		}//if UDP
 
 		//Richieste TCP in concorrente multiprocesso
-		if(FD_ISSET(listenfd, &rset)){
+		if(FD_ISSET(tcpfd, &rset)){
 			len = sizeof(struct sockaddr_in);
 			//Accettazione connessione e creazione figlio
-			if((connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &len)) < 0){
+			if((connfd = accept(tcpfd, (struct sockaddr *)&cliaddr, &len)) < 0){
 				if(errno = EINTR) continue;
 				else {
 					perror("Accept");
@@ -184,10 +199,47 @@ int main(int argc, char * argv[]){
 			}
 			//Creazione figlio
 			if(fork() == 0){
-				close(listenfd);
-				printf("PID %i: richiesta ricevuta\n", getpid());
+				close(tcpfd);
+				printf("Server: PID %i: richiesta ricevuta\n", getpid());
+				while(1){
+					finish = 0;
+					if(read(connfd, &dirName, MAX_LENGTH) < 0){
+						perror("dirname");
+						exit(12);
+					}
+					printf("Server: Leggo dalla cartella %s\n", dirName);
+					if((dir = opendir(dirName)) != NULL){
+						if(write(connfd, "1", sizeof(char)) < 0){
+							perror("write control accept");
+							exit(13);
+						}
+						while((ent = readdir(dir)) != NULL){
+							if(ent->d_name[0] == '.'){
+								if(ent->d_name[1] == '.')
+									if(ent->d_name[2] == '\0'){
+										continue;
+									}
+								if(ent->d_name[1] == '\0'){
+									continue;
+								}
+							}				
+							printf("\t%s\n", ent->d_name);
+							write(connfd, ent->d_name, MAX_LENGTH);
+							write(connfd, &finish, sizeof(int));
+						}
+						closedir(dir);
 
-
+					} else {
+						if(write(connfd, "0", sizeof(int)) < 0){
+							perror("write control refuse");
+							exit(13);
+						}
+						perror("diropen");
+						exit(13);
+					}
+					finish = 1;
+					write(connfd, &finish, sizeof(int));
+				}
 				close(connfd);
 				exit(0);
 			} //figlio
