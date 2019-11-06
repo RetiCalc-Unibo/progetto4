@@ -65,6 +65,7 @@ int main(int argc, char * argv[]){
 		printf("Server: Usage -> Server [port]\n");
 		exit(4);
 	}
+	printf("Server: Inizializzato\n");
 
 	//Inizializzo indirizzo server
 	memset((char *)&servaddr, 0,sizeof(servaddr));
@@ -94,13 +95,12 @@ int main(int argc, char * argv[]){
 		perror("Listen socket TCP");
 		exit(7);
 	}
-
+	printf("Server: bind socket TCP ok\n");
 	//Creazione socket UDP 
 	if ((udpfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
 		perror("Apertura socket UDP");
 		exit(8);
 	}
-
 	//Set option socket UDP
 	//SO_REUSE --> reuse address; option_value --> on = 1
 	if(setsockopt(udpfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0){
@@ -111,6 +111,7 @@ int main(int argc, char * argv[]){
 		perror("Bind socket UDP");
 		exit(10);
 	}
+	printf("Server: bind socket UDP ok\n");
 
 	//Gestione richieste
 	// NB! --> EINTR corrisponde a interruzione da richieste
@@ -132,6 +133,7 @@ int main(int argc, char * argv[]){
 		}
 		//Richieste UDP in sequenziale
 		if(FD_ISSET(udpfd, &rset)){
+			printf("Server: select UDP\n");
 			ris=0;
 			len = sizeof(struct sockaddr_in);
 			//Ricezione dati
@@ -159,6 +161,8 @@ int main(int argc, char * argv[]){
 				ris=-1;
 				continue;
 			}
+			printf("Server: Richiesta eliminazione parola %s dal file %s\n", 
+				request.word, request.fileName);
 			len_word = strlen(request.word);
 			while ((nread = read(fd_fileUDP_in, &buff, DIM_BUFF)) > 0) {
 				//Scrittura del file senza occorrenze parola
