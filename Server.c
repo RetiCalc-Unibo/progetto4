@@ -133,7 +133,7 @@ int main(int argc, char * argv[]) {
 		}
 		//Richieste UDP in sequenziale
 		if(FD_ISSET(udpfd, &rset)){
-			printf("Server: select UDP\n");
+			printf("Server UDP: Richiesta ricevuta\n");
 			ris=0;
 			len = sizeof(struct sockaddr_in);
 			//Ricezione dati
@@ -143,9 +143,9 @@ int main(int argc, char * argv[]) {
 			}
 			clienthost = gethostbyaddr((char *)&cliaddr.sin_addr, sizeof(cliaddr.sin_addr), AF_INET);
 			if (clienthost == NULL) 
-				printf("Server: Client host information not found\n");
+				printf("Server UDP: Client host information not found\n");
 			else {
-				printf("Server: Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
+				printf("Server UDP: Operazione richiesta da: %s %i\n", clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port));
 			}
 			printf("Server: Richiesta eliminazione parola %s dal file %s\n", 
 				request.word, request.fileName);
@@ -191,8 +191,8 @@ int main(int argc, char * argv[]) {
 			}
 			close(fd_fileUDP_in);
 			close(fd_fileUDP_out);
-			rename(file_dest_UDP,request.fileName);
-			printf("Server: operazione terminata, %d occorrenze trovate\n", ris);
+			rename(file_dest_UDP, request.fileName);
+			printf("Server UDP: Operazione terminata, %d occorrenze trovate\n", ris);
 			ris = htonl(ris);
 			//Invio risposta
 			if(sendto(udpfd, &ris, sizeof(ris), 0, (struct sockaddr*)&cliaddr, len) < 0) {
@@ -215,14 +215,14 @@ int main(int argc, char * argv[]) {
 			//Creazione figlio
 			if(fork() == 0){
 				close(tcpfd);
-				printf("Server: PID %i: richiesta ricevuta\n", getpid());
+				printf("Server TCP: PID %i: Richiesta ricevuta\n", getpid());
 				while(1){
 					finish = 0;
 					if(read(connfd, &dirName, MAX_LENGTH) < 0){
 						perror("dirname");
 						exit(15);
 					}
-					printf("Server: Leggo dalla cartella %s\n", dirName);
+					printf("Server TCP: Ricevuta la cartella %s\n", dirName);
 					strcpy(dirBuff, dirName);
 					strcat(dirBuff, "/");
 					if((dir = opendir(dirName)) != NULL){
@@ -246,7 +246,10 @@ int main(int argc, char * argv[]) {
 							stat(ent->d_name, &path_stat);
 							if(S_ISDIR(path_stat.st_mode) == 0) {
 								if((tdir = opendir(dirBuff)) != NULL){
-									
+									char tempBuff[] = "La cartella ";
+									strcat(tempBuff, ent->d_name);
+									strcat(tempBuff, " contiene:");
+									write(connfd, tempBuff, MAX_LENGTH);
 									while((ent = readdir(tdir)) != NULL){
 										if(ent->d_name[0] == '.'){
 											if(ent->d_name[1] == '.')
@@ -267,7 +270,7 @@ int main(int argc, char * argv[]) {
 						}
 						closedir(dir);
 						write(connfd, "\0", sizeof(char));
-						printf("Server: Elencati i file di %s\n", dirName);
+						printf("Server TCP: Elencati i file delle sottocartelle di %s\n", dirName);
 
 					} else {
 						if(write(connfd, "0", sizeof(char)) < 0){
