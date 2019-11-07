@@ -192,9 +192,10 @@ int main(int argc, char * argv[]){
 			close(fd_fileUDP_in);
 			close(fd_fileUDP_out);
 			rename(file_dest_UDP,request.fileName);
-			printf("Server: operazione terminata\n");
+			printf("Server: operazione terminata, %d occorrenze trovate\n", ris);
+			ris=htonl(ris);
 			//Invio risposta
-			if(sendto(udpfd, &ris, sizeof(int), 0, (struct sockaddr*)&cliaddr, len) < 0) {
+			if(sendto(udpfd, &ris, sizeof(ris), 0, (struct sockaddr*)&cliaddr, len) < 0) {
 				perror("Sendto error "); 
 				exit(1);
 			}
