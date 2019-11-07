@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <math.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #define DIM_BUFF 256
 #define MAX_LENGTH 256
@@ -31,16 +32,17 @@ int main(int argc, char * argv[]){
 	int i, j, tcpfd, connfd, udpfd, fd_file, nready, maxfdp1, udp_repl, len_word;
 	int fd_fileUDP_out, fd_fileUDP_in;
 	char zero=0, buff[DIM_BUFF], nome_file[20], nome_dir[20], file_dest_UDP[256];
-	char dirName[MAX_LENGTH];
+	char dirName[MAX_LENGTH], dirBuff[MAX_LENGTH*2];
 	fd_set rset;
 	int len, nread, nwrite, num , ris, port, check_word;; 
 	struct sockaddr_in cliaddr, servaddr;
 	struct hostent *clienthost;
 	const int on = 1;
 
-	DIR * dir;
+	DIR * dir, * tdir;
 	struct dirent * ent;
 	int finish;
+	struct stat path_stat;
 
 	// Controllo Argomenti
 
@@ -193,7 +195,7 @@ int main(int argc, char * argv[]){
 			close(fd_fileUDP_out);
 			rename(file_dest_UDP,request.fileName);
 			printf("Server: operazione terminata, %d occorrenze trovate\n", ris);
-			ris=htonl(ris);
+			ris = htonl(ris);
 			//Invio risposta
 			if(sendto(udpfd, &ris, sizeof(ris), 0, (struct sockaddr*)&cliaddr, len) < 0) {
 				perror("Sendto error "); 
@@ -223,6 +225,8 @@ int main(int argc, char * argv[]){
 						exit(12);
 					}
 					printf("Server: Leggo dalla cartella %s\n", dirName);
+					strcpy(dirBuff, dirName);
+					strcat(dirBuff, "/");
 					if((dir = opendir(dirName)) != NULL){
 						if(write(connfd, "1", sizeof(char)) < 0){
 							perror("write control accept");
@@ -237,22 +241,43 @@ int main(int argc, char * argv[]){
 								if(ent->d_name[1] == '\0'){
 									continue;
 								}
-							}				
-							printf("\t%s\n", ent->d_name);
-							write(connfd, ent->d_name, MAX_LENGTH);
+							}
+							
+							strcat(dirBuff, "/");
+							strcat(dirBuff, ent->d_name);
+							stat(ent->d_name, &path_stat);
+							if(S_ISDIR(path_stat.st_mode) == 0) {
+								if((tdir = opendir(dirBuff)) != NULL){
+									
+									while((ent = readdir(tdir)) != NULL){
+										if(ent->d_name[0] == '.'){
+											if(ent->d_name[1] == '.')
+												if(ent->d_name[2] == '\0'){
+													continue;
+												}
+											if(ent->d_name[1] == '\0'){
+												continue;
+											}
+										}
+										write(connfd, ent->d_name, MAX_LENGTH);
+									}
+								}
+								closedir(tdir);
+							}
+							strcpy(dirBuff, dirName);
+
 						}
 						closedir(dir);
 						write(connfd, "\0", sizeof(char));
+						printf("Server: Elencati i file di %s\n", dirName);
 
 					} else {
-						if(write(connfd, "0", sizeof(int)) < 0){
+						if(write(connfd, "0", sizeof(char)) < 0){
 							perror("write control refuse");
 							exit(13);
 						}
 						perror("diropen");
-						exit(13);
 					}
-					printf("Server: Elencati i file di %s\n", dirName);
 				}
 				close(connfd);
 				exit(0);
