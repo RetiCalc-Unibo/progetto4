@@ -19,7 +19,6 @@ int main(int argc, char *argv[]) {
 	struct hostent *host;
 	struct sockaddr_in clientaddr, servaddr;
 	int portNumber, socketDescriptor, number, length, result, nameLength;
-	
 	Request request;
 	
 	// Controllo argomenti in input
@@ -89,7 +88,7 @@ int main(int argc, char *argv[]) {
 
 	while (gets(request.fileName)) {
 		nameLength = strlen(request.fileName);
-		if(nameLength > 4
+		if (nameLength > 4
 			&& request.fileName[nameLength-4] == '.'
 			&& request.fileName[nameLength-3] == 't'
 			&& request.fileName[nameLength-2] == 'x'
@@ -97,8 +96,7 @@ int main(int argc, char *argv[]) {
 
             printf("Inserire la parola da eliminare o EOF (CTRL + D) per un nuovo file: ");
 
-            if(gets(request.word)){
-
+            if (gets(request.word)) {
 				if(strlen(request.word) == 0) {
 					printf("Non hai inserito una parola.\n");
 					printf("Inserire la parola da eliminare o EOF (CTRL + D) per un nuovo file: ");
@@ -110,6 +108,7 @@ int main(int argc, char *argv[]) {
                     perror("Errore nella sendto");
                     continue;
                 }
+
                 printf("Client: richiesta inviata\n");
 
                 if (recvfrom(socketDescriptor, &result, sizeof(result), 0, (struct sockaddr*)&servaddr, &length) < 0) {

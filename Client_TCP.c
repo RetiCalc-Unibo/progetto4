@@ -9,7 +9,7 @@
 
 #define MAX_LENGTH 256
 
-int main(int argc, char *argv[]) {
+int main (int argc, char *argv[]) {
 	int sd, port, nread;
 	char buff[MAX_LENGTH];
     char result;
@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
 	host = gethostbyname(argv[1]);
 
 	nread = 0;
-
 	while (argv[2][nread] != '\0') {
 		if ((argv[2][nread] < '0') || (argv[2][nread] > '9')) {
 			printf("Client TCP: Secondo argomento non intero\n");
@@ -53,9 +52,7 @@ int main(int argc, char *argv[]) {
 		servaddr.sin_port = htons(port);
 	}
 
-
-    sd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sd < 0) {
+	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("Client TCP: Apertura socket");
 		exit(5);
 	}
@@ -74,10 +71,10 @@ int main(int argc, char *argv[]) {
 		// Invio del nome della directory
 		write(sd, &dirName, sizeof(dirName));
 
-		if(read(sd, &result, sizeof(char)) < 0){
+		if (read(sd, &result, sizeof(char)) < 0) {
 			perror("Read result");
 			exit(7);
-		} else if(result == '0') {
+		} else if (result == '0') {
 			printf("Client TCP: Problema di lettura della directory nel Server\n");
 			printf("Client TCP: Nome della directory, EOF per terminare: ");
 			continue;
@@ -91,20 +88,18 @@ int main(int argc, char *argv[]) {
         */
 		printf("Client TCP: Ricevo e stampo i nomi dei file remoti\n---------------\n");
 		
-		while((nread = read(sd, buff, MAX_LENGTH)) > 0) {
-            if(buff[0] == '\0'){
+		while ((nread = read(sd, buff, MAX_LENGTH)) > 0) {
+            if (buff[0] == '\0') {
             	break;
             }
             printf("\t%s\n", buff);
         }
 
 		printf("---------------\nClient TCP: Trasferimento terminato\n\n");
-
 		printf("Client TCP: Nome della directory, EOF per terminare: ");
 	}
     
 	close(sd);
-
 	printf("\nClient TCP: termino...\n");
 	exit(8);
 }
